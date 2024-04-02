@@ -5,6 +5,13 @@ const prisma = new PrismaClient();
 const app = express();
 const PORT = 3000;
 
+
+const cors = require('cors');
+
+
+// Habilita CORS para todas as requisições
+app.use(cors());
+
 app.use(express.json());
 
 // Rota para buscar todas as questões com suas opções

@@ -1,85 +1,74 @@
-let currentQuestionIndex = 0;
-let score = 0;
-let questions = [];
+document.addEventListener('DOMContentLoaded', () => {
+  let currentQuestionIndex = 0;
+  let score = 0;
+  let questions = [];
 
-document.getElementById('next-btn').style.display = 'none';
-
-// Função para buscar as perguntas do servidor
-function fetchQuestions() {
-  fetch('http://localhost:3000/questoes')
-    .then(response => response.json())
-    .then(data => {
-      questions = data;
-      displayQuestion();
-    })
-    .catch(error => console.error('Erro ao buscar questões:', error));
-}
-
-// Função para mostrar a questão atual
-function displayQuestion() {
+  const nextBtn = document.getElementById('next-btn');
   const quizContainer = document.getElementById('quiz-container');
-  quizContainer.innerHTML = ''; // Limpar questão anterior
 
-  if (currentQuestionIndex >= questions.length) {
-    quizContainer.innerHTML = `<div id="final-score">Pontuação Final: ${score}/${questions.length}</div>`;
-    document.getElementById('next-btn').style.display = 'none';
-    return;
-  }
+  nextBtn.style.display = 'none';
 
-  const question = questions[currentQuestionIndex];
-  const questionDiv = document.createElement('div');
-  questionDiv.classList.add('question');
-  questionDiv.innerText = question.texto;
+  const fetchQuestions = () => {
+    fetch('http://localhost:3000/questoes')
+      .then(response => response.json())
+      .then(data => {
+        questions = data;
+        displayQuestion();
+      })
+      .catch(error => console.error('Erro ao buscar questões:', error));
+  };
 
-  const optionsDiv = document.createElement('div');
-  optionsDiv.classList.add('options');
+  const displayQuestion = () => {
+    if (currentQuestionIndex < questions.length) {
+      const question = questions[currentQuestionIndex];
+      quizContainer.innerHTML = `<div class="question">${question.texto}</div>`;
 
-  question.opcoes.forEach(option => {
-    const optionDiv = document.createElement('div');
-    optionDiv.classList.add('option');
-    optionDiv.innerText = option.texto;
-    optionDiv.onclick = () => selectOption(option.correta, optionDiv);
-    optionsDiv.appendChild(optionDiv);
-  });
+      const optionsDiv = document.createElement('div');
+      optionsDiv.classList.add('options');
 
-  quizContainer.appendChild(questionDiv);
-  quizContainer.appendChild(optionsDiv);
-  document.getElementById('next-btn').style.display = 'none'; // Esconder o botão até que uma opção seja selecionada
-}
+      question.opcoes.forEach(option => {
+        const optionDiv = document.createElement('div');
+        optionDiv.classList.add('option');
+        optionDiv.innerText = option.texto;
+        optionDiv.addEventListener('click', () => selectOption(option.correta, optionDiv));
+        optionsDiv.appendChild(optionDiv);
+      });
 
-// Função chamada quando uma opção é selecionada
-function selectOption(isCorrect, optionElement) {
-  const options = document.querySelectorAll('.option');
-  options.forEach(option => {
-    option.onclick = null; // Desabilitar mais cliques
-    option.classList.add('incorrect'); // Assume inicialmente que todas as opções são incorretas
-  });
+      quizContainer.appendChild(optionsDiv);
+      nextBtn.style.display = 'none';
+    } else {
+      showFinalScore();
+    }
+  };
 
-  if (isCorrect) {
-    optionElement.classList.add('correct'); // Destaca a opção correta
-    score++;
-  } else {
-    optionElement.classList.add('blink'); // Adiciona efeito de piscar para resposta incorreta
-  }
+  const selectOption = (isCorrect, optionElement) => {
+    document.querySelectorAll('.option').forEach(option => {
+      option.classList.add('incorrect');
+      option.removeEventListener('click', selectOption);
+    });
 
-  document.getElementById('next-btn').style.display = 'block'; // Mostrar botão para próxima questão
-}
+    if (isCorrect) {
+      optionElement.classList.remove('incorrect');
+      optionElement.classList.add('correct');
+      score++;
+    } else {
+      optionElement.classList.add('blink');
+    }
 
-// Função para avançar para a próxima questão
-function nextQuestion() {
-  currentQuestionIndex++;
-  if (currentQuestionIndex < questions.length) {
+    nextBtn.style.display = 'block';
+  };
+
+  const nextQuestion = () => {
+    currentQuestionIndex++;
     displayQuestion();
-  } else {
-    // Exibir a pontuação final e oferecer reinício do quiz
-    document.getElementById('quiz-container').innerHTML = `<h3>Seu resultado final é ${score} de ${questions.length}.</h3>`;
-    document.getElementById('next-btn').style.display = 'none';
-  }
-}
+  };
 
-// Iniciar o quiz
-fetchQuestions();
+  const showFinalScore = () => {
+    quizContainer.innerHTML = `<h3>Seu resultado final é ${score} de ${questions.length} questões.</h3>`;
+    nextBtn.style.display = 'none';
+  };
 
-document.getElementById('next-btn').addEventListener('click', () => {
-  nextQuestion();
+  nextBtn.addEventListener('click', nextQuestion);
+
+  fetchQuestions();
 });
