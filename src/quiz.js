@@ -4,35 +4,12 @@ let questions = [];
 
 document.getElementById('next-btn').style.display = 'none';
 
-// Função para buscar as perguntas do servidor e reestruturá-las
+// Função para buscar as perguntas do servidor
 function fetchQuestions() {
   fetch('http://localhost:3000/questoes')
     .then(response => response.json())
     .then(data => {
-      // Reestrutura os dados para agrupar as opções por pergunta
-      const groupedQuestions = data.reduce((acc, current) => {
-        let question = acc.find(q => q.id === current.id);
-        if (question) {
-          question.opcoes.push({
-            opcaoId: current.opcaoId,
-            opcaoTexto: current.opcaoTexto,
-            correta: current.correta
-          });
-        } else {
-          acc.push({
-            id: current.id,
-            texto: current.texto,
-            opcoes: [{
-              opcaoId: current.opcaoId,
-              opcaoTexto: current.opcaoTexto,
-              correta: current.correta
-            }]
-          });
-        }
-        return acc;
-      }, []);
-
-      questions = groupedQuestions;
+      questions = data;
       displayQuestion();
     })
     .catch(error => console.error('Erro ao buscar questões:', error));
@@ -60,10 +37,8 @@ function displayQuestion() {
   question.opcoes.forEach(option => {
     const optionDiv = document.createElement('div');
     optionDiv.classList.add('option');
-    optionDiv.innerText = option.opcaoTexto;
-    optionDiv.dataset.correct = option.correta; // Adiciona o atributo para identificar se a opção é correta
-    optionDiv.onclick = () => selectOption(option.correta === 1, optionDiv);
-
+    optionDiv.innerText = option.texto;
+    optionDiv.onclick = () => selectOption(option.correta, optionDiv);
     optionsDiv.appendChild(optionDiv);
   });
 
@@ -75,26 +50,19 @@ function displayQuestion() {
 // Função chamada quando uma opção é selecionada
 function selectOption(isCorrect, optionElement) {
   const options = document.querySelectorAll('.option');
-  optionElement.classList.add('blink'); // Adiciona a animação de piscada na opção clicada
+  options.forEach(option => {
+    option.onclick = null; // Desabilitar mais cliques
+    option.classList.add('incorrect'); // Assume inicialmente que todas as opções são incorretas
+  });
 
-  setTimeout(() => { // Espera a animação de piscada terminar
-    options.forEach(option => {
-      option.onclick = null; // Desabilitar mais cliques
-      if (option === optionElement) {
-        option.classList.add(isCorrect ? 'correct' : 'incorrect');
-      } else if (!isCorrect && option.dataset.correct === 'true') {
-        option.classList.add('correct'); // Destaca a correta se a escolha foi incorreta
-      } else {
-        option.classList.add('incorrect');
-      }
-    });
+  if (isCorrect) {
+    optionElement.classList.add('correct'); // Destaca a opção correta
+    score++;
+  } else {
+    optionElement.classList.add('blink'); // Adiciona efeito de piscar para resposta incorreta
+  }
 
-    if (isCorrect) {
-      score++;
-    }
-
-    document.getElementById('next-btn').style.display = 'block'; // Mostrar botão para próxima questão
-  }, 500); // Tempo correspondente à duração da animação
+  document.getElementById('next-btn').style.display = 'block'; // Mostrar botão para próxima questão
 }
 
 // Função para avançar para a próxima questão
@@ -103,7 +71,7 @@ function nextQuestion() {
   if (currentQuestionIndex < questions.length) {
     displayQuestion();
   } else {
-    // Exibir a pontuação final e reiniciar o quiz
+    // Exibir a pontuação final e oferecer reinício do quiz
     document.getElementById('quiz-container').innerHTML = `<h3>Seu resultado final é ${score} de ${questions.length}.</h3>`;
     document.getElementById('next-btn').style.display = 'none';
   }
@@ -112,4 +80,6 @@ function nextQuestion() {
 // Iniciar o quiz
 fetchQuestions();
 
-document.getElementById('next-btn').addEventListener('click', nextQuestion);
+document.getElementById('next-btn').addEventListener('click', () => {
+  nextQuestion();
+});
