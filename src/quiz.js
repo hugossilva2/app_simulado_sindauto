@@ -8,11 +8,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   nextBtn.style.display = 'none';
 
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]]; // Troca elementos
+    }
+  }
+
   const fetchQuestions = () => {
     fetch('http://localhost:3000/questoes')
       .then(response => response.json())
       .then(data => {
         questions = data;
+        shuffleArray(questions); // Embaralha as questões
         displayQuestion();
       })
       .catch(error => console.error('Erro ao buscar questões:', error));
@@ -21,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const displayQuestion = () => {
     if (currentQuestionIndex < questions.length) {
       const question = questions[currentQuestionIndex];
+      shuffleArray(question.opcoes); // Embaralha as opções da questão atual
       quizContainer.innerHTML = `<div class="question">${question.texto}</div>`;
 
       const optionsDiv = document.createElement('div');
@@ -35,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       quizContainer.appendChild(optionsDiv);
-      nextBtn.style.display = 'none';
+      nextBtn.style.display = 'none'; // Esconder o botão até que uma opção seja selecionada
     } else {
       showFinalScore();
     }
